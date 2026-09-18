@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>布局选择题 - 围棋布局练习</title>
+    <script type="text/javascript" src="wgo.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Microsoft YaHei', 'PingFang SC', 'Helvetica Neue', Arial, sans-serif;
+            background: #eef0f2;
+            min-height: 100vh;
+            color: #333;
+        }
+
+        header {
+            position: relative;
+            text-align: center;
+            padding: 14px 0 10px;
+            background: #fff;
+            border-bottom: 1px solid #dde0e4;
+        }
+
+        h1 {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #2c2c2c;
+            letter-spacing: 3px;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: #999;
+            margin-top: 2px;
+            letter-spacing: 1px;
+        }
+
+        .progress-bar {
+            background: #fff;
+            border-bottom: 1px solid #dde0e4;
+            padding: 8px 0;
+        }
+
+        .progress-inner {
+            max-width: 1080px;
+            margin: 0 auto;
+            padding: 0 32px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .progress-label {
+            font-size: 14px;
+            color: #999;
+            white-space: nowrap;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .progress-label .cur {
+            font-weight: 600;
+            color: #3a4a5c;
+        }
+
+        .progress-track {
+            flex: 1;
+            height: 7px;
+            background: #f0f1f3;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: #3a4a5c;
+            border-radius: 3px;
+            transition: width 0.3s ease;
+        }
+
+        .page {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            padding: 20px 28px 36px;
+            max-width: 1080px;
+            margin: 0 auto;
+        }
+
+        .board-wrap {
+            flex-shrink: 0;
+            background: #fff;
+            border-radius: 6px;
+            padding: 12px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+            border: 1px solid #d0d3d7;
+        }
+
+        .board-inner {
+            background: #fafbfc;
+            border-radius: 4px;
+            padding: 14px 18px 18px 20px;
+        }
+
+        #board { width: 640px; height: 640px; }
+
+        .side {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            width: 200px;
+            flex-shrink: 0;
+        }
+
+        .panel {
+            background: #fff;
+            border-radius: 4px;
+            border: 1px solid #dde0e4;
+            padding: 12px 16px;
+        }
+
+        .panel-title {
+            font-size: 13px;
+            color: #666;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .nav-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 9px 0;
+            font-size: 13px;
+            font-weight: 500;
+            border: 1px solid #d0d3d7;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            background: #fff;
+            color: #666;
+            text-align: center;
+        }
+
+        .btn:hover:not(:disabled) { background: #f5f6f7; border-color: #b0b4b8; color: #444; }
+        .btn:active:not(:disabled) { background: #e8eaec; }
+        .btn:disabled { background: #fafafa; color: #a0a4a8; border-color: #dde0e4; cursor: not-allowed; opacity: 0.5; }
+
+        .btn-full { grid-column: 1 / -1; }
+
+        .btn-dark {
+            background: #3a4a5c;
+            color: #fff;
+            border-color: #3a4a5c;
+        }
+        .btn-dark:hover:not(:disabled) { background: #4a5a6c; border-color: #4a5a6c; color: #fff; }
+
+        .choice-area {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .choice-btn {
+            padding: 12px 0;
+            font-size: 15px;
+            font-weight: 600;
+            border: 2px solid #d0d3d7;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            background: #fff;
+            color: #555;
+            text-align: center;
+            position: relative;
+        }
+
+        .choice-btn:hover:not(:disabled):not(.selected) {
+            background: #f0f2f5;
+            border-color: #b0b4b8;
+        }
+
+        .choice-btn.selected {
+            border-color: #3a4a5c;
+            background: #e8eef4;
+            color: #3a4a5c;
+        }
+
+        .choice-btn.correct {
+            border-color: #2d8a4e;
+            background: #e6f4ec;
+            color: #2d8a4e;
+        }
+
+        .choice-btn.wrong {
+            border-color: #c44;
+            background: #fde8e8;
+            color: #c44;
+        }
+
+        .choice-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+
+        .choice-label {
+            font-size: 11px;
+            color: #999;
+            margin-left: 6px;
+            font-weight: 400;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 10px 0;
+            font-size: 14px;
+            font-weight: 600;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .submit-btn:disabled {
+            background: #e0e3e7;
+            color: #a0a4a8;
+            cursor: not-allowed;
+        }
+
+        .submit-btn.ready {
+            background: #3a4a5c;
+            color: #fff;
+        }
+        .submit-btn.ready:hover { background: #4a5a6c; }
+
+        .submit-btn.next {
+            background: #2d8a4e;
+            color: #fff;
+        }
+        .submit-btn.next:hover { background: #3a9d5c; }
+
+        .result-msg {
+            font-size: 13px;
+            text-align: center;
+            padding: 6px 0;
+            min-height: 28px;
+            font-weight: 500;
+        }
+
+        .result-msg.correct { color: #2d8a4e; }
+        .result-msg.wrong { color: #c44; }
+
+        .jump-row {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .jump-input {
+            flex: 1;
+            padding: 7px 10px;
+            font-size: 13px;
+            border: 1px solid #d0d3d7;
+            border-radius: 4px;
+            outline: none;
+            color: #555;
+            width: 60px;
+        }
+        .jump-input:focus { border-color: #3a4a5c; }
+        .jump-input::placeholder { color: #b0b4b8; }
+
+        .jump-btn {
+            padding: 7px 12px;
+            font-size: 13px;
+            border: 1px solid #d0d3d7;
+            border-radius: 4px;
+            background: #fff;
+            color: #666;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .jump-btn:hover { background: #f5f6f7; color: #444; }
+
+        .info-panel .panel-title { margin-bottom: 6px; }
+        .info-panel .info-sep { height: 1px; background: #dde0e4; margin: 0 -4px 8px; }
+        .info-row { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; }
+        .info-label { font-size: 13px; color: #999; }
+        .info-value { font-size: 13px; color: #333; font-weight: 500; }
+
+        .loading, .error {
+            display: flex; align-items: center; justify-content: center;
+            width: 100%; aspect-ratio: 1 / 1;
+            color: #bbb; font-size: 15px;
+        }
+        .error { color: #c44; }
+
+        footer {
+            text-align: center;
+            padding: 12px 0;
+            color: #b0b4b8;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        @media (max-width: 960px) {
+            .page {
+                flex-direction: column;
+                align-items: center;
+                padding: 16px 12px 32px;
+                gap: 16px;
+            }
+            #board { width: min(640px, calc(100vw - 72px)); height: min(640px, calc(100vw - 72px)); }
+            .side { width: 100%; max-width: 640px; flex-direction: row; flex-wrap: wrap; gap: 10px; }
+            .side .panel { flex: 1; min-width: 160px; }
+        }
+
+        @media (max-width: 640px) {
+            header { padding: 10px 0 8px; }
+            h1 { font-size: 1.1em; letter-spacing: 2px; }
+            .subtitle { font-size: 11px; }
+
+            .progress-bar { padding: 6px 0; }
+            .progress-inner { padding: 0 16px; gap: 10px; }
+            .progress-label { font-size: 12px; }
+            .progress-track { height: 6px; }
+
+            .page { padding: 12px 10px 24px; gap: 12px; }
+
+            .board-wrap { padding: 8px; border-radius: 4px; width: 100%; }
+            .board-inner { padding: 8px 10px 10px 12px; border-radius: 3px; }
+            #board { width: 100% !important; height: auto !important; aspect-ratio: 1 / 1; }
+
+            .side { gap: 8px; }
+            .panel { padding: 10px 12px; }
+            .panel-title { font-size: 12px; margin-bottom: 6px; }
+
+            .nav-grid { gap: 6px; }
+            .btn { padding: 10px 0; font-size: 13px; }
+
+            .choice-btn { padding: 10px 0; font-size: 14px; }
+
+            .jump-input { padding: 8px 10px; font-size: 14px; }
+            .jump-btn { padding: 8px 14px; font-size: 14px; }
+
+            .info-panel .info-row { padding: 4px 0; }
+            .info-label, .info-value { font-size: 12px; }
+
+            footer { padding: 10px 0; font-size: 11px; }
+        }
+
+        @media (max-width: 380px) {
+            h1 { font-size: 1em; }
+            .subtitle { display: none; }
+            .panel { padding: 8px 10px; }
+            .btn { padding: 9px 0; font-size: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>布局选择题</h1>
+        <p class="subtitle">围棋布局练习</p>
+    </header>
+
+    <div class="progress-bar">
+        <div class="progress-inner">
+            <span class="progress-label"><span id="currentFile" class="cur">-</span> / <span id="fileCount">-</span></span>
+            <div class="progress-track">
+                <div id="progressFill" class="progress-fill" style="width:0%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="page">
+        <div class="board-wrap">
+            <div class="board-inner">
+                <div id="board"><div class="loading">正在加载...</div></div>
+            </div>
+        </div>
+
+        <div class="side">
+            <div class="panel">
+                <div class="panel-title">导航</div>
+                <div class="nav-grid">
+                    <button id="prevBtn" class="btn" disabled>上一题</button>
+                    <button id="nextBtn" class="btn" disabled>下一题</button>
+                    <button id="randomBtn" class="btn btn-dark btn-full">随机一题</button>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">选择答案</div>
+                <div class="choice-area">
+                    <button id="choiceA" class="choice-btn" data-choice="A">A</button>
+                    <button id="choiceB" class="choice-btn" data-choice="B">B</button>
+                    <button id="submitBtn" class="submit-btn" disabled>确认选择</button>
+                    <div id="resultMsg" class="result-msg"></div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-title">跳转</div>
+                <div class="jump-row">
+                    <input id="jumpInput" class="jump-input" type="number" min="1" placeholder="输入题号">
+                    <button id="jumpBtn" class="jump-btn">前往</button>
+                </div>
+            </div>
+
+            <div class="panel info-panel">
+                <div class="panel-title">题目信息</div>
+                <div class="info-sep"></div>
+                <div class="info-row"><span class="info-label">题号</span><span id="infoNumber" class="info-value">-</span></div>
+                <div class="info-row"><span class="info-label">下一手</span><span id="infoTurn" class="info-value">-</span></div>
+            </div>
+        </div>
+    </div>
+
+    <footer>布局选择题</footer>
+
+    <script>
+        let sgfFiles = [];
+        let currentIndex = -1;
+        let board = null;
+        let game = null;
+        let currentProblem = null;
+        let selectedChoice = null;
+        let answered = false;
+        let answers = {};
+
+        const boardElem = document.getElementById('board');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const randomBtn = document.getElementById('randomBtn');
+        const currentFileElem = document.getElementById('currentFile');
+        const fileCountElem = document.getElementById('fileCount');
+        const progressFill = document.getElementById('progressFill');
+        const choiceA = document.getElementById('choiceA');
+        const choiceB = document.getElementById('choiceB');
+        const submitBtn = document.getElementById('submitBtn');
+        const resultMsg = document.getElementById('resultMsg');
+        const jumpInput = document.getElementById('jumpInput');
+        const jumpBtn = document.getElementById('jumpBtn');
+        const infoNumber = document.getElementById('infoNumber');
+        const infoTurn = document.getElementById('infoTurn');
+
+        const coordinates = {
+            grid: {
+                draw: function(args, board) {
+                    this.fillStyle = 'rgba(0,0,0,0.6)';
+                    this.textBaseline = 'middle';
+                    this.textAlign = 'center';
+                    this.font = (board.stoneRadius * 0.8) + 'px sans-serif';
+
+                    var yleft = board.getX(-0.75);
+                    var ybottom = board.getY(board.size - 0.25);
+
+                    for (var i = 0; i < board.size; i++) {
+                        var ch = i + 'A'.charCodeAt(0);
+                        if (ch >= 'I'.charCodeAt(0)) ch++;
+
+                        this.fillText(board.size - i, yleft, board.getY(i));
+                        this.fillText(String.fromCharCode(ch), board.getX(i), ybottom);
+                    }
+                }
+            }
+        };
+
+        function parseSGFProperty(content, propName) {
+            const results = [];
+            const propRegex = new RegExp(propName + '\\s*(?=\\[)', 'g');
+            let propMatch;
+            while ((propMatch = propRegex.exec(content)) !== null) {
+                let i = propMatch.index + propName.length;
+                while (i < content.length) {
+                    while (i < content.length && (content[i] === ' ' || content[i] === '\r' || content[i] === '\n' || content[i] === '\t')) i++;
+                    if (content[i] !== '[') break;
+                    i++;
+                    let value = '';
+                    while (i < content.length && content[i] !== ']') { value += content[i]; i++; }
+                    if (value) results.push(value);
+                    i++;
+                }
+            }
+            return results;
+        }
+
+        function loadSGF(problem) {
+            boardElem.innerHTML = '';
+            selectedChoice = null;
+            answered = false;
+            currentProblem = problem;
+
+            const size = problem.size || 19;
+
+            game = new WGo.Game(size);
+
+            var allBlack = problem.setupBlack.concat(problem.extraBlack || []);
+            allBlack.forEach(coord => {
+                var x = coord.charCodeAt(0) - 97;
+                var y = coord.charCodeAt(1) - 97;
+                game.addStone(x, y, WGo.B);
+            });
+
+            problem.setupWhite.forEach(coord => {
+                var x = coord.charCodeAt(0) - 97;
+                var y = coord.charCodeAt(1) - 97;
+                game.addStone(x, y, WGo.W);
+            });
+
+            board = new WGo.Board(boardElem, {
+                size: size,
+                width: Math.min(640, boardElem.parentElement.clientWidth - 40),
+                section: { top: 0, left: -1, right: -1, bottom: -1 },
+                theme: {
+                    shadowBlur: 0,
+                    shadowSize: 0,
+                    shadowColor: 'transparent',
+                    gridLinesColor: '#b8a88c'
+                },
+                stoneHandler: WGo.Board.drawHandlers.NORMAL
+            });
+
+            board.addCustomObject(coordinates);
+            syncBoard();
+        }
+
+        function syncBoard() {
+            board.removeAllObjects();
+            board.addCustomObject(coordinates);
+
+            var pos = game.position;
+            for (var x = 0; x < game.size; x++) {
+                for (var y = 0; y < game.size; y++) {
+                    var c = pos.get(x, y);
+                    if (c !== 0) {
+                        board.addObject({ x: x, y: y, c: c });
+                    }
+                }
+            }
+
+            if (currentProblem && currentProblem.lastMove) {
+                var tx = currentProblem.lastMove.charCodeAt(0) - 97;
+                var ty = currentProblem.lastMove.charCodeAt(1) - 97;
+                board.addObject({ x: tx, y: ty, type: 'TR' });
+            }
+
+            if (currentProblem && currentProblem.choices) {
+                if (currentProblem.choices.A) {
+                    var ax = currentProblem.choices.A.charCodeAt(0) - 97;
+                    var ay = currentProblem.choices.A.charCodeAt(1) - 97;
+                    board.addObject({ x: ax, y: ay, type: 'LB', text: 'A' });
+                }
+                if (currentProblem.choices.B) {
+                    var bx = currentProblem.choices.B.charCodeAt(0) - 97;
+                    var by = currentProblem.choices.B.charCodeAt(1) - 97;
+                    board.addObject({ x: bx, y: by, type: 'LB', text: 'B' });
+                }
+            }
+
+        }
+
+        function updateProgress() {
+            if (sgfFiles.length === 0) return;
+            var pct = ((currentIndex + 1) / sgfFiles.length * 100).toFixed(1);
+            progressFill.style.width = pct + '%';
+        }
+
+        function updateButtons() {
+            prevBtn.disabled = currentIndex <= 0;
+            nextBtn.disabled = currentIndex >= sgfFiles.length - 1;
+        }
+
+        function resetChoiceUI() {
+            selectedChoice = null;
+            answered = false;
+            choiceA.className = 'choice-btn';
+            choiceB.className = 'choice-btn';
+            choiceA.disabled = false;
+            choiceB.disabled = false;
+            submitBtn.disabled = true;
+            submitBtn.textContent = '确认选择';
+            submitBtn.className = 'submit-btn';
+            resultMsg.textContent = '';
+            resultMsg.className = 'result-msg';
+        }
+
+        function setChoiceSelected(choice) {
+            if (answered) return;
+            selectedChoice = choice;
+            choiceA.className = 'choice-btn' + (choice === 'A' ? ' selected' : '');
+            choiceB.className = 'choice-btn' + (choice === 'B' ? ' selected' : '');
+            submitBtn.disabled = false;
+            submitBtn.className = 'submit-btn ready';
+        }
+
+        function submitAnswer() {
+            if (!selectedChoice || answered || !currentProblem) return;
+
+            answered = true;
+            choiceA.disabled = true;
+            choiceB.disabled = true;
+
+            var correct = answers[currentIndex + 1];
+            var isCorrect = selectedChoice === correct;
+
+            if (correct) {
+                if (isCorrect) {
+                    if (selectedChoice === 'A') {
+                        choiceA.className = 'choice-btn correct';
+                    } else {
+                        choiceB.className = 'choice-btn correct';
+                    }
+                    resultMsg.textContent = '✓ 正确！';
+                    resultMsg.className = 'result-msg correct';
+                } else {
+                    if (selectedChoice === 'A') {
+                        choiceA.className = 'choice-btn wrong';
+                    } else {
+                        choiceB.className = 'choice-btn wrong';
+                    }
+                    if (correct === 'A') {
+                        choiceA.className = 'choice-btn correct';
+                    } else {
+                        choiceB.className = 'choice-btn correct';
+                    }
+                    resultMsg.textContent = '✗ 错误，正确答案是 ' + correct;
+                    resultMsg.className = 'result-msg wrong';
+                }
+            } else {
+                resultMsg.textContent = '答案数据暂未配置';
+                resultMsg.className = 'result-msg';
+            }
+
+            submitBtn.textContent = '下一题';
+            submitBtn.className = 'submit-btn next';
+            submitBtn.disabled = false;
+            submitBtn.onclick = () => {
+                submitBtn.onclick = null;
+                if (currentIndex < sgfFiles.length - 1) loadFile(currentIndex + 1);
+            };
+
+            syncBoard();
+        }
+
+        function jumpTo() {
+            var num = parseInt(jumpInput.value);
+            if (isNaN(num) || num < 1 || num > sgfFiles.length) return;
+            loadFile(num - 1);
+            jumpInput.value = '';
+        }
+
+        choiceA.addEventListener('click', () => setChoiceSelected('A'));
+        choiceB.addEventListener('click', () => setChoiceSelected('B'));
+        submitBtn.addEventListener('click', submitAnswer);
+
+        prevBtn.addEventListener('click', () => { if (currentIndex > 0) loadFile(currentIndex - 1); });
+        nextBtn.addEventListener('click', () => { if (currentIndex < sgfFiles.length - 1) loadFile(currentIndex + 1); });
+        randomBtn.addEventListener('click', () => {
+            if (sgfFiles.length <= 1) return;
+            let idx;
+            do { idx = Math.floor(Math.random() * sgfFiles.length); } while (idx === currentIndex);
+            loadFile(idx);
+        });
+
+        jumpBtn.addEventListener('click', jumpTo);
+        jumpInput.addEventListener('keydown', e => { if (e.key === 'Enter') jumpTo(); });
+
+        document.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT') return;
+            if (e.key === 'ArrowLeft') prevBtn.click();
+            else if (e.key === 'ArrowRight') nextBtn.click();
+            else if (e.key === 'r' || e.key === 'R') randomBtn.click();
+            else if (e.key === 'a' || e.key === 'A') setChoiceSelected('A');
+            else if (e.key === 'b' || e.key === 'B') setChoiceSelected('B');
+            else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); submitBtn.click(); }
+        });
+
+        let manifest = null;
+        const chunkCache = {};
+
+        async function loadChunk(chunkIndex) {
+            if (chunkCache[chunkIndex]) return chunkCache[chunkIndex];
+            try {
+                const resp = await fetch('data/chunk-' + chunkIndex + '.json');
+                if (!resp.ok) throw new Error('chunk not found');
+                const data = await resp.json();
+                chunkCache[chunkIndex] = data;
+                return data;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        async function getProblem(num) {
+            if (manifest) {
+                for (const c of manifest.chunks) {
+                    if (num >= c.range[0] && num <= c.range[1]) {
+                        const chunkIdx = manifest.chunks.indexOf(c);
+                        const data = await loadChunk(chunkIdx);
+                        if (data && data[num]) {
+                            return JSON.parse(data[num]);
+                        }
+                        return null;
+                    }
+                }
+            }
+            return null;
+        }
+
+        async function loadAnswers() {
+            try {
+                const resp = await fetch('answers.json');
+                if (resp.ok) {
+                    answers = await resp.json();
+                }
+            } catch (e) {
+                answers = {};
+            }
+        }
+
+        async function init() {
+            await loadAnswers();
+            try {
+                const resp = await fetch('data/manifest.json');
+                if (resp.ok) {
+                    manifest = await resp.json();
+                    sgfFiles = [];
+                    for (const c of manifest.chunks) {
+                        for (let n = c.range[0]; n <= c.range[1]; n++) {
+                            sgfFiles.push(n + '.sgf');
+                        }
+                    }
+                } else {
+                    throw new Error('no manifest');
+                }
+            } catch (e) {
+                boardElem.innerHTML = '<div class="error">加载失败</div>';
+                return;
+            }
+            fileCountElem.textContent = sgfFiles.length;
+            jumpInput.max = sgfFiles.length;
+            updateButtons();
+            if (sgfFiles.length > 0) loadFile(0);
+        }
+
+        async function loadFile(index) {
+            if (index < 0 || index >= sgfFiles.length) return;
+            currentIndex = index;
+            var num = parseInt(sgfFiles[index].replace('.sgf', ''));
+            currentFileElem.textContent = num;
+            infoNumber.textContent = num;
+            updateButtons();
+            updateProgress();
+            resetChoiceUI();
+
+            const problem = await getProblem(num);
+            if (problem) {
+                infoTurn.textContent = problem.nextColor === 'B' ? '黑棋' : '白棋';
+                loadSGF(problem);
+            } else {
+                boardElem.innerHTML = '<div class="error">加载失败</div>';
+            }
+        }
+
+        let resizeTimer;
+        window.addEventListener('resize', () => {
+            clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                if (board && currentIndex >= 0) {
+                    loadFile(currentIndex);
+                }
+            }, 300);
+        });
+
+        init();
+
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/buju/sw.js').catch(() => {});
+        }
+    </script>
+</body>
+</html>
