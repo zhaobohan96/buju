@@ -19,11 +19,16 @@
         }
 
         header {
-            position: relative;
             text-align: center;
-            padding: 14px 0 10px;
+            padding: 14px 20px 10px;
             background: #fff;
             border-bottom: 1px solid #dde0e4;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         h1 {
@@ -39,6 +44,29 @@
             margin-top: 2px;
             letter-spacing: 1px;
         }
+
+        .mode-toggle {
+            display: flex;
+            border: 1px solid #d0d3d7;
+            border-radius: 4px;
+            margin-left: 16px;
+            flex-shrink: 0;
+        }
+
+        .mode-btn {
+            padding: 5px 14px;
+            font-size: 12px;
+            font-weight: 500;
+            border: none;
+            background: #fff;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .mode-btn:not(:last-child) { border-right: 1px solid #d0d3d7; }
+        .mode-btn:hover { background: #f5f6f7; }
+        .mode-btn.active { background: #3a4a5c; color: #fff; }
 
         .progress-bar {
             background: #fff;
@@ -65,6 +93,13 @@
         .progress-label .cur {
             font-weight: 600;
             color: #3a4a5c;
+        }
+
+        .progress-accuracy {
+            font-size: 13px;
+            color: #2d8a4e;
+            font-weight: 600;
+            white-space: nowrap;
         }
 
         .progress-track {
@@ -210,13 +245,6 @@
             opacity: 0.7;
         }
 
-        .choice-label {
-            font-size: 11px;
-            color: #999;
-            margin-left: 6px;
-            font-weight: 400;
-        }
-
         .submit-btn {
             width: 100%;
             padding: 10px 0;
@@ -301,6 +329,80 @@
         }
         .error { color: #c44; }
 
+        .test-start-panel {
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .test-start-panel .panel {
+            max-width: 320px;
+            margin: 0 auto;
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show { display: flex; }
+
+        .modal {
+            background: #fff;
+            border-radius: 8px;
+            padding: 32px 40px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+            text-align: center;
+            min-width: 300px;
+        }
+
+        .modal h2 {
+            font-size: 18px;
+            color: #2c2c2c;
+            margin-bottom: 20px;
+        }
+
+        .modal-stats {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 20px;
+        }
+
+        .modal-stat {
+            text-align: center;
+        }
+
+        .modal-stat-value {
+            font-size: 28px;
+            font-weight: 700;
+        }
+
+        .modal-stat-value.green { color: #2d8a4e; }
+        .modal-stat-value.red { color: #c44; }
+        .modal-stat-value.blue { color: #3a4a5c; }
+
+        .modal-stat-label {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .modal-accuracy {
+            font-size: 36px;
+            font-weight: 700;
+            color: #3a4a5c;
+            margin: 16px 0;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+        }
+
         footer {
             text-align: center;
             padding: 12px 0;
@@ -322,9 +424,10 @@
         }
 
         @media (max-width: 640px) {
-            header { padding: 10px 0 8px; }
+            header { padding: 10px 12px 8px; }
             h1 { font-size: 1.1em; letter-spacing: 2px; }
             .subtitle { font-size: 11px; }
+            .mode-btn { padding: 4px 10px; font-size: 11px; }
 
             .progress-bar { padding: 6px 0; }
             .progress-inner { padding: 0 16px; gap: 10px; }
@@ -365,8 +468,16 @@
 </head>
 <body>
     <header>
-        <h1>布局选择题</h1>
-        <p class="subtitle">围棋布局练习</p>
+        <div class="header-top">
+            <div>
+                <h1>布局选择题</h1>
+                <p class="subtitle">围棋布局练习</p>
+            </div>
+            <div class="mode-toggle">
+                <button class="mode-btn active" data-mode="free">自由练习</button>
+                <button class="mode-btn" data-mode="test">测试模式</button>
+            </div>
+        </div>
     </header>
 
     <div class="progress-bar">
@@ -375,10 +486,19 @@
             <div class="progress-track">
                 <div id="progressFill" class="progress-fill" style="width:0%"></div>
             </div>
+            <span id="progressAccuracy" class="progress-accuracy" style="display:none"></span>
         </div>
     </div>
 
-    <div class="page">
+    <div id="testStartPanel" class="test-start-panel" style="display:none;">
+        <div class="panel">
+            <div class="panel-title">测试说明</div>
+            <p style="font-size:13px;color:#666;margin-bottom:16px;">随机抽取20道题目进行测试，完成后查看正确率。</p>
+            <button id="startTestBtn" class="submit-btn ready">开始测试</button>
+        </div>
+    </div>
+
+    <div class="page" id="mainPage">
         <div class="board-wrap">
             <div class="board-inner">
                 <div id="board"><div class="loading">正在加载...</div></div>
@@ -386,7 +506,7 @@
         </div>
 
         <div class="side">
-            <div class="panel">
+            <div id="navPanel" class="panel">
                 <div class="panel-title">导航</div>
                 <div class="nav-grid">
                     <button id="prevBtn" class="btn" disabled>上一题</button>
@@ -405,7 +525,7 @@
                 </div>
             </div>
 
-            <div class="panel">
+            <div id="jumpPanel" class="panel">
                 <div class="panel-title">跳转</div>
                 <div class="jump-row">
                     <input id="jumpInput" class="jump-input" type="number" min="1" placeholder="输入题号">
@@ -422,6 +542,30 @@
         </div>
     </div>
 
+    <div id="resultModal" class="modal-overlay">
+        <div class="modal">
+            <h2>测试完成</h2>
+            <div class="modal-stats">
+                <div class="modal-stat">
+                    <div id="resultTotal" class="modal-stat-value blue">0</div>
+                    <div class="modal-stat-label">总题数</div>
+                </div>
+                <div class="modal-stat">
+                    <div id="resultCorrect" class="modal-stat-value green">0</div>
+                    <div class="modal-stat-label">正确</div>
+                </div>
+                <div class="modal-stat">
+                    <div id="resultWrong" class="modal-stat-value red">0</div>
+                    <div class="modal-stat-label">错误</div>
+                </div>
+            </div>
+            <div id="resultAccuracy" class="modal-accuracy">0%</div>
+            <div class="modal-footer">
+                <button id="backBtn" class="submit-btn ready">返回练习</button>
+            </div>
+        </div>
+    </div>
+
     <footer>布局选择题</footer>
 
     <script>
@@ -434,6 +578,12 @@
         let answered = false;
         let answers = {};
 
+        let currentMode = 'free';
+        let testProblems = [];
+        let testIndex = -1;
+        let testCorrect = 0;
+        let testWrong = 0;
+
         const boardElem = document.getElementById('board');
         const prevBtn = document.getElementById('prevBtn');
         const nextBtn = document.getElementById('nextBtn');
@@ -441,6 +591,7 @@
         const currentFileElem = document.getElementById('currentFile');
         const fileCountElem = document.getElementById('fileCount');
         const progressFill = document.getElementById('progressFill');
+        const progressAccuracy = document.getElementById('progressAccuracy');
         const choiceA = document.getElementById('choiceA');
         const choiceB = document.getElementById('choiceB');
         const submitBtn = document.getElementById('submitBtn');
@@ -449,6 +600,12 @@
         const jumpBtn = document.getElementById('jumpBtn');
         const infoNumber = document.getElementById('infoNumber');
         const infoTurn = document.getElementById('infoTurn');
+        const mainPage = document.getElementById('mainPage');
+        const testStartPanel = document.getElementById('testStartPanel');
+        const navPanel = document.getElementById('navPanel');
+        const jumpPanel = document.getElementById('jumpPanel');
+        const resultModal = document.getElementById('resultModal');
+        const modeBtns = document.querySelectorAll('.mode-btn');
 
         const coordinates = {
             grid: {
@@ -563,13 +720,28 @@
                     board.addObject({ x: bx, y: by, type: 'LB', text: 'B' });
                 }
             }
-
         }
 
         function updateProgress() {
-            if (sgfFiles.length === 0) return;
-            var pct = ((currentIndex + 1) / sgfFiles.length * 100).toFixed(1);
-            progressFill.style.width = pct + '%';
+            if (currentMode === 'test') {
+                var total = testProblems.length;
+                var pct = total > 0 ? ((testIndex + 1) / total * 100).toFixed(1) : 0;
+                progressFill.style.width = pct + '%';
+                currentFileElem.textContent = (testIndex + 1) + ' / ' + total;
+                fileCountElem.textContent = '';
+                var answered = testCorrect + testWrong;
+                if (answered > 0) {
+                    progressAccuracy.textContent = '正确率 ' + Math.round(testCorrect / answered * 100) + '%';
+                    progressAccuracy.style.display = '';
+                }
+            } else {
+                if (sgfFiles.length === 0) return;
+                var pct = ((currentIndex + 1) / sgfFiles.length * 100).toFixed(1);
+                progressFill.style.width = pct + '%';
+                currentFileElem.textContent = sgfFiles[currentIndex] ? sgfFiles[currentIndex].replace('.sgf', '') : '-';
+                fileCountElem.textContent = sgfFiles.length;
+                progressAccuracy.style.display = 'none';
+            }
         }
 
         function updateButtons() {
@@ -604,7 +776,15 @@
         function handleSubmit() {
             if (submitBtn.dataset.phase === 'next') {
                 submitBtn.dataset.phase = 'choose';
-                if (currentIndex < sgfFiles.length - 1) loadFile(currentIndex + 1);
+                if (currentMode === 'test') {
+                    if (testIndex < testProblems.length - 1) {
+                        loadTestProblem(testIndex + 1);
+                    } else {
+                        showResult();
+                    }
+                } else {
+                    if (currentIndex < sgfFiles.length - 1) loadFile(currentIndex + 1);
+                }
                 return;
             }
 
@@ -614,7 +794,8 @@
             choiceA.disabled = true;
             choiceB.disabled = true;
 
-            var correct = answers[currentIndex + 1];
+            var problemNum = currentMode === 'test' ? testProblems[testIndex].num : currentIndex + 1;
+            var correct = answers[problemNum];
 
             if (correct) {
                 var isCorrect = selectedChoice === correct;
@@ -629,6 +810,11 @@
                 }
                 resultMsg.textContent = isCorrect ? '✓ 正确！' : '✗ 错误，正确答案是 ' + correct;
                 resultMsg.className = 'result-msg ' + (isCorrect ? 'correct' : 'wrong');
+
+                if (currentMode === 'test') {
+                    if (isCorrect) testCorrect++; else testWrong++;
+                    updateProgress();
+                }
             } else {
                 resultMsg.textContent = '答案数据暂未配置';
                 resultMsg.className = 'result-msg';
@@ -648,6 +834,94 @@
             loadFile(num - 1);
             jumpInput.value = '';
         }
+
+        function shuffleArray(arr) {
+            var a = arr.slice();
+            for (var i = a.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+            }
+            return a;
+        }
+
+        function setMode(mode) {
+            currentMode = mode;
+            modeBtns.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.mode === mode);
+            });
+
+            if (mode === 'test') {
+                mainPage.style.display = 'none';
+                testStartPanel.style.display = '';
+                navPanel.style.display = 'none';
+                jumpPanel.style.display = 'none';
+                progressAccuracy.style.display = '';
+                progressAccuracy.textContent = '';
+            } else {
+                mainPage.style.display = '';
+                testStartPanel.style.display = 'none';
+                navPanel.style.display = '';
+                jumpPanel.style.display = '';
+                progressAccuracy.style.display = 'none';
+                if (sgfFiles.length > 0) loadFile(0);
+            }
+        }
+
+        function startTest() {
+            var shuffled = shuffleArray(sgfFiles);
+            testProblems = shuffled.slice(0, 20).map(f => ({ file: f, num: parseInt(f.replace('.sgf', '')) }));
+            testIndex = -1;
+            testCorrect = 0;
+            testWrong = 0;
+
+            testStartPanel.style.display = 'none';
+            mainPage.style.display = '';
+            navPanel.style.display = 'none';
+            jumpPanel.style.display = 'none';
+            progressAccuracy.style.display = '';
+
+            if (testProblems.length > 0) {
+                loadTestProblem(0);
+            } else {
+                boardElem.innerHTML = '<div class="error">题目不足</div>';
+            }
+        }
+
+        async function loadTestProblem(index) {
+            testIndex = index;
+            resetChoiceUI();
+            updateProgress();
+
+            var prob = testProblems[index];
+            const problem = await getProblem(prob.num);
+            if (problem) {
+                infoNumber.textContent = prob.num;
+                infoTurn.textContent = problem.nextColor === 'B' ? '黑棋' : '白棋';
+                loadSGF(problem);
+            } else {
+                boardElem.innerHTML = '<div class="error">加载失败</div>';
+            }
+        }
+
+        function showResult() {
+            var total = testCorrect + testWrong;
+            var accuracy = total === 0 ? 0 : Math.round(testCorrect / total * 100);
+            document.getElementById('resultTotal').textContent = total;
+            document.getElementById('resultCorrect').textContent = testCorrect;
+            document.getElementById('resultWrong').textContent = testWrong;
+            document.getElementById('resultAccuracy').textContent = accuracy + '%';
+            resultModal.classList.add('show');
+        }
+
+        modeBtns.forEach(btn => {
+            btn.addEventListener('click', () => setMode(btn.dataset.mode));
+        });
+
+        document.getElementById('startTestBtn').addEventListener('click', startTest);
+        document.getElementById('backBtn').addEventListener('click', () => {
+            resultModal.classList.remove('show');
+            setMode('free');
+        });
 
         choiceA.addEventListener('click', () => setChoiceSelected('A'));
         choiceB.addEventListener('click', () => setChoiceSelected('B'));
@@ -773,7 +1047,6 @@
         });
 
         init();
-
     </script>
 </body>
 </html>
