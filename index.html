@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>布局选择题 - 围棋布局练习</title>
     <script type="text/javascript" src="wgo.min.js"></script>
     <style>
@@ -584,6 +587,7 @@
             submitBtn.disabled = true;
             submitBtn.textContent = '确认选择';
             submitBtn.className = 'submit-btn';
+            submitBtn.dataset.phase = 'choose';
             resultMsg.textContent = '';
             resultMsg.className = 'result-msg';
         }
@@ -597,7 +601,13 @@
             submitBtn.className = 'submit-btn ready';
         }
 
-        function submitAnswer() {
+        function handleSubmit() {
+            if (submitBtn.dataset.phase === 'next') {
+                submitBtn.dataset.phase = 'choose';
+                if (currentIndex < sgfFiles.length - 1) loadFile(currentIndex + 1);
+                return;
+            }
+
             if (!selectedChoice || answered || !currentProblem) return;
 
             answered = true;
@@ -605,31 +615,20 @@
             choiceB.disabled = true;
 
             var correct = answers[currentIndex + 1];
-            var isCorrect = selectedChoice === correct;
 
             if (correct) {
-                if (isCorrect) {
-                    if (selectedChoice === 'A') {
-                        choiceA.className = 'choice-btn correct';
-                    } else {
-                        choiceB.className = 'choice-btn correct';
-                    }
-                    resultMsg.textContent = '✓ 正确！';
-                    resultMsg.className = 'result-msg correct';
+                var isCorrect = selectedChoice === correct;
+                if (selectedChoice === 'A') {
+                    choiceA.className = 'choice-btn ' + (isCorrect ? 'correct' : 'wrong');
                 } else {
-                    if (selectedChoice === 'A') {
-                        choiceA.className = 'choice-btn wrong';
-                    } else {
-                        choiceB.className = 'choice-btn wrong';
-                    }
-                    if (correct === 'A') {
-                        choiceA.className = 'choice-btn correct';
-                    } else {
-                        choiceB.className = 'choice-btn correct';
-                    }
-                    resultMsg.textContent = '✗ 错误，正确答案是 ' + correct;
-                    resultMsg.className = 'result-msg wrong';
+                    choiceB.className = 'choice-btn ' + (isCorrect ? 'correct' : 'wrong');
                 }
+                if (!isCorrect) {
+                    var correctBtn = correct === 'A' ? choiceA : choiceB;
+                    correctBtn.className = 'choice-btn correct';
+                }
+                resultMsg.textContent = isCorrect ? '✓ 正确！' : '✗ 错误，正确答案是 ' + correct;
+                resultMsg.className = 'result-msg ' + (isCorrect ? 'correct' : 'wrong');
             } else {
                 resultMsg.textContent = '答案数据暂未配置';
                 resultMsg.className = 'result-msg';
@@ -638,10 +637,7 @@
             submitBtn.textContent = '下一题';
             submitBtn.className = 'submit-btn next';
             submitBtn.disabled = false;
-            submitBtn.onclick = () => {
-                submitBtn.onclick = null;
-                if (currentIndex < sgfFiles.length - 1) loadFile(currentIndex + 1);
-            };
+            submitBtn.dataset.phase = 'next';
 
             syncBoard();
         }
@@ -655,7 +651,7 @@
 
         choiceA.addEventListener('click', () => setChoiceSelected('A'));
         choiceB.addEventListener('click', () => setChoiceSelected('B'));
-        submitBtn.addEventListener('click', submitAnswer);
+        submitBtn.addEventListener('click', handleSubmit);
 
         prevBtn.addEventListener('click', () => { if (currentIndex > 0) loadFile(currentIndex - 1); });
         nextBtn.addEventListener('click', () => { if (currentIndex < sgfFiles.length - 1) loadFile(currentIndex + 1); });
@@ -778,9 +774,6 @@
 
         init();
 
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/buju/sw.js').catch(() => {});
-        }
     </script>
 </body>
 </html>
