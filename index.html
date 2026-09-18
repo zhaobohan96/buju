@@ -955,7 +955,7 @@
         async function loadChunk(chunkIndex) {
             if (chunkCache[chunkIndex]) return chunkCache[chunkIndex];
             try {
-                const resp = await fetch('data/chunk-' + chunkIndex + '.json');
+                const resp = await fetch('data/chunk-' + chunkIndex + '.json?v=2');
                 if (!resp.ok) throw new Error('chunk not found');
                 const data = await resp.json();
                 chunkCache[chunkIndex] = data;
@@ -983,7 +983,7 @@
 
         async function loadAnswers() {
             try {
-                const resp = await fetch('answers.json');
+                const resp = await fetch('answers.json?v=2');
                 if (resp.ok) {
                     answers = await resp.json();
                 }
@@ -995,7 +995,7 @@
         async function init() {
             await loadAnswers();
             try {
-                const resp = await fetch('data/manifest.json');
+                const resp = await fetch('data/manifest.json?v=2');
                 if (resp.ok) {
                     manifest = await resp.json();
                     sgfFiles = [];
